@@ -14,7 +14,7 @@ h1{font-size:20px;margin:0 0 4px 0}
 #lockscreen{position:fixed;top:0;left:0;right:0;bottom:0;background:#111;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
 #lockscreen h2{color:#0f0;margin-bottom:24px}
 #lockscreen input{background:#000;color:#0f0;border:1px solid #0f0;padding:12px;font-size:16px;width:100%;max-width:320px;text-align:center;letter-spacing:2px;margin-bottom:12px}
-#lockscreen button{background:#0f0;color:#000;border:none;padding:12px;font-size:16px;font-weight:bold;width:100%;max-width:320px;cursor:pointer}
+#lockscreen button:not(.pw-eye){background:#0f0;color:#000;border:none;padding:12px;font-size:16px;font-weight:bold;width:100%;max-width:320px;cursor:pointer}
 #lockerr{color:#f44;font-size:13px;min-height:18px;margin-bottom:8px}
 
 /* layout */
@@ -56,8 +56,9 @@ h1 .icon-lg,h2 .icon-lg{stroke:#0f0}
 h3 .icon{stroke:#0f9}
 
 .pw-wrap{position:relative;width:100%}
-.pw-wrap input{width:100%;padding-right:40px !important;margin-bottom:8px}
-.pw-eye{position:absolute;right:2px;top:0;width:36px;height:calc(100% - 8px);background:none;border:none;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+#lockscreen .pw-wrap input,.pw-wrap input{width:100%;padding-right:40px;margin-bottom:0}
+.pw-wrap{margin-bottom:12px}
+.pw-eye{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:32px;height:32px;background-color:transparent !important;background-image:none;border:none !important;outline:none;box-shadow:none;padding:0;margin:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;-webkit-appearance:none;appearance:none}
 .pw-eye .icon{stroke:#0a0;width:18px;height:18px;pointer-events:none}
 #lockscreen .pw-wrap{max-width:320px}
 </style>
