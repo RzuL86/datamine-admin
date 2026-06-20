@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataMine Admin</title>
+<style>
+*{box-sizing:border-box;font-family:monospace}
+body{background:#111;color:#0f0;margin:0;padding:12px;font-size:15px}
+h1{font-size:20px;margin:0 0 4px 0}
+.sub{color:#888;font-size:12px;margin-bottom:20px}
+
+/* lock */
+#lockscreen{position:fixed;top:0;left:0;right:0;bottom:0;background:#111;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+#lockscreen h2{color:#0f0;margin-bottom:24px}
+#lockscreen input{background:#000;color:#0f0;border:1px solid #0f0;padding:12px;font-size:16px;width:100%;max-width:320px;text-align:center;letter-spacing:2px;margin-bottom:12px}
+#lockscreen button{background:#0f0;color:#000;border:none;padding:12px;font-size:16px;font-weight:bold;width:100%;max-width:320px;cursor:pointer}
+#lockerr{color:#f44;font-size:13px;min-height:18px;margin-bottom:8px}
+
+/* layout */
+.card{background:#000;border:1px solid #0a0;border-radius:4px;padding:14px;margin-bottom:16px}
+.card h3{margin:0 0 12px 0;font-size:14px;color:#0f9}
+input,select{background:#000;color:#0f0;border:1px solid #0a0;padding:10px;width:100%;font-size:14px;margin-bottom:8px;border-radius:3px}
+button{background:#0f0;color:#000;border:none;padding:10px 14px;font-size:14px;font-weight:bold;cursor:pointer;border-radius:3px}
+button:disabled{opacity:0.5;cursor:default}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-sm{padding:6px 10px;font-size:12px}
+.btn-red{background:#f44;color:#fff}
+.btn-orange{background:#f80;color:#000}
+.btn-outline{background:#000;color:#0f0;border:1px solid #0a0}
+
+#genresult{display:none;margin-top:12px;padding:10px;background:#001a00;border:1px solid #0f0;border-radius:3px}
+#genresult .keytext{font-size:18px;font-weight:bold;letter-spacing:1px;color:#0f0;word-break:break-all;margin-bottom:8px}
+#genresult button{width:100%}
+
+#status{font-size:12px;min-height:16px;margin-top:6px;color:#0c0}
+#status.error{color:#f44}
+
+/* client list */
+.client{border:1px solid #0a0;border-radius:3px;padding:10px;margin-bottom:8px;font-size:12px}
+.client .row{display:flex;justify-content:space-between;margin-bottom:4px}
+.client .key{font-weight:bold;color:#0f0;font-size:13px}
+.client .badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold}
+.badge.active{background:#0a0;color:#000}
+.badge.revoked{background:#f44;color:#fff}
+.client .label{color:#888}
+.client .val{color:#0c0}
+.client .host{color:#0f9;font-size:11px;word-break:break-all}
+#clientlist{margin-top:8px}
+#listloading{color:#888;font-size:13px}
+.refreshrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.icon{width:14px;height:14px;vertical-align:-2px;display:inline-block}
+.icon-lg{width:20px;height:20px;vertical-align:-4px;display:inline-block}
+button .icon,button .icon-lg{stroke:currentColor}
+h1 .icon-lg,h2 .icon-lg{stroke:#0f0}
+h3 .icon{stroke:#0f9}
+
+.pw-wrap{position:relative;width:100%}
+.pw-wrap input{width:100%;padding-right:40px !important;margin-bottom:8px}
+.pw-eye{position:absolute;right:2px;top:0;width:36px;height:calc(100% - 8px);background:none;border:none;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.pw-eye .icon{stroke:#0a0;width:18px;height:18px;pointer-events:none}
+#lockscreen .pw-wrap{max-width:320px}
+</style>
+</head>
+<body>
+
+<div id="lockscreen">
+  <h2><svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> DataMine Admin</h2>
+  <div class="pw-wrap">
+    <input id="lockpw" type="password" placeholder="Enter admin password" autocomplete="off">
+    <button type="button" class="pw-eye" data-target="lockpw"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </div>
+  <button id="lockbtn">UNLOCK</button>
+  <div id="lockerr"></div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start">
+  <div>
+    <h1><svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> DataMine Admin</h1>
+    <div class="sub">License key management</div>
+  </div>
+  <button class="btn-sm btn-outline" id="settingsbtn" style="margin-top:2px">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</div>
+
+<div class="card" id="settingspanel" style="display:none">
+  <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Change Admin Password</h3>
+  <div class="pw-wrap">
+    <input id="st-newpw" type="password" placeholder="New password" autocomplete="off">
+    <button type="button" class="pw-eye" data-target="st-newpw"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </div>
+  <div class="pw-wrap">
+    <input id="st-newpw2" type="password" placeholder="Confirm new password" autocomplete="off">
+    <button type="button" class="pw-eye" data-target="st-newpw2"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </div>
+  <button id="st-savebtn">SAVE PASSWORD</button>
+  <div id="st-status"></div>
+</div>
+
+<div class="card">
+  <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Generate New Key</h3>
+  <input id="genname" type="text" placeholder="Buyer name">
+  <input id="genemail" type="text" placeholder="Buyer email">
+  <button id="genbtn">GENERATE KEY</button>
+  <div id="genresult">
+    <div class="keytext" id="genkeytext"></div>
+    <button id="gencopybtn" class="btn-outline"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> COPY KEY</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<div class="card">
+  <div class="refreshrow">
+    <h3 style="margin:0"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Clients</h3>
+    <button class="btn-sm btn-outline" id="refreshbtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> REFRESH</button>
+  </div>
+  <div id="listloading">Loading...</div>
+  <div id="clientlist"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ynzhjedposvqygcbimaz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InluemhqZWRwb3N2cXlnY2JpbWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MzIyMzQsImV4cCI6MjA5NzUwODIzNH0.nFqB-1okoXHksW6fdbh2dxekn5qiJ7iwr-8dZ2qSeMc';
+
+// ── Lock screen ──────────────────────────────────────
+function djb2(s){ var h=5381; for(var i=0;i<s.length;i++) h=((h<<5)+h)+s.charCodeAt(i); return h>>>0; }
+(function(){
+  var DEFAULT_HASH = 709258546; // "datamine2026"
+  var stored = localStorage.getItem('dma_pw_hash');
+  var PW_HASH = stored ? parseInt(stored) : DEFAULT_HASH;
+  function unlock(){
+    document.getElementById('lockscreen').style.display = 'none';
+    localStorage.setItem('dma_unlocked', Date.now());
+    loadClients();
+  }
+  var last = parseInt(localStorage.getItem('dma_unlocked') || '0');
+  if (Date.now() - last < 8 * 60 * 60 * 1000) { unlock(); return; }
+  function tryUnlock(){
+    var val = document.getElementById('lockpw').value;
+    if (djb2(val) === PW_HASH) {
+      unlock();
+    } else {
+      document.getElementById('lockerr').textContent = 'Wrong password.';
+      document.getElementById('lockpw').value = '';
+    }
+  }
+  document.getElementById('lockbtn').addEventListener('click', tryUnlock);
+  document.getElementById('lockpw').addEventListener('keydown', function(e){ if(e.key==='Enter') tryUnlock(); });
+})();
+
+// ── Key generation ───────────────────────────────────
+function randSegment(){
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var out = '';
+  for (var i=0;i<4;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+function genKey(){
+  return 'DMMY-' + randSegment() + '-' + randSegment() + '-' + randSegment();
+}
+
+function setStatus(msg, isErr){
+  var el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = isErr ? 'error' : '';
+}
+
+document.getElementById('genbtn').addEventListener('click', async function(){
+  var name = document.getElementById('genname').value.trim();
+  var email = document.getElementById('genemail').value.trim();
+  if (!name) { setStatus('Please enter buyer name.', true); return; }
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'GENERATING...';
+  setStatus('');
+  try {
+    var key = genKey();
+    var res = await fetch(SUPABASE_URL + '/rest/v1/licenses', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ key: key, buyer_name: name, buyer_email: email, status: 'active' })
+    });
+    if (!res.ok) {
+      var errText = await res.text();
+      setStatus('Failed to generate key: ' + errText, true);
+      btn.disabled = false;
+      btn.textContent = 'GENERATE KEY';
+      return;
+    }
+    document.getElementById('genkeytext').textContent = key;
+    document.getElementById('genresult').style.display = 'block';
+    document.getElementById('genname').value = '';
+    document.getElementById('genemail').value = '';
+    setStatus('Key created successfully.');
+    loadClients();
+  } catch(e) {
+    setStatus('Network error: ' + e.message, true);
+  }
+  btn.disabled = false;
+  btn.textContent = 'GENERATE KEY';
+});
+
+document.getElementById('gencopybtn').addEventListener('click', function(){
+  var key = document.getElementById('genkeytext').textContent;
+  navigator.clipboard.writeText(key).then(function(){
+    setStatus('Key copied to clipboard.');
+  });
+});
+
+// ── Client list ───────────────────────────────────────
+async function loadClients(){
+  var listEl = document.getElementById('clientlist');
+  var loadingEl = document.getElementById('listloading');
+  loadingEl.style.display = 'block';
+  listEl.innerHTML = '';
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/licenses?select=*&order=created_at.desc', {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      }
+    });
+    var rows = await res.json();
+    loadingEl.style.display = 'none';
+    if (!rows.length) {
+      listEl.innerHTML = '<div style="color:#888;font-size:13px">No clients yet.</div>';
+      return;
+    }
+    rows.forEach(function(r){
+      var div = document.createElement('div');
+      div.className = 'client';
+      var statusBadge = r.status === 'revoked'
+        ? '<span class="badge revoked">REVOKED</span>'
+        : '<span class="badge active">ACTIVE</span>';
+      div.innerHTML =
+        '<div class="row"><span class="key">' + r.key + '</span>' + statusBadge + '</div>' +
+        '<div class="row"><span class="label">Buyer</span><span class="val">' + (r.buyer_name || '-') + '</span></div>' +
+        '<div class="row"><span class="label">Email</span><span class="val">' + (r.buyer_email || '-') + '</span></div>' +
+        '<div class="row"><span class="label">Activated</span><span class="val">' + (r.activated_at ? new Date(r.activated_at).toLocaleDateString() : 'Not yet') + '</span></div>' +
+        (r.hostname ? '<div class="row"><span class="label">Host</span><span class="host">' + r.hostname + '</span></div>' : '') +
+        '<div class="btn-row" style="margin-top:8px">' +
+        (r.status === 'revoked'
+          ? '<button class="btn-sm btn-outline" onclick="reactivateKey(\'' + r.key + '\')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> REACTIVATE</button>'
+          : '<button class="btn-sm btn-red" onclick="revokeKey(\'' + r.key + '\')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> REVOKE</button>') +
+        '</div>';
+      listEl.appendChild(div);
+    });
+  } catch(e) {
+    loadingEl.textContent = 'Failed to load: ' + e.message;
+  }
+}
+
+async function revokeKey(key){
+  if (!confirm('Revoke key ' + key + '? This buyer will be locked out immediately.')) return;
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/licenses?key=eq.' + encodeURIComponent(key), {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ status: 'revoked' })
+    });
+    loadClients();
+  } catch(e) {
+    alert('Failed to revoke: ' + e.message);
+  }
+}
+
+async function reactivateKey(key){
+  if (!confirm('Reactivate key ' + key + '? This clears its hostname lock, allowing activation on a new deployment.')) return;
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/licenses?key=eq.' + encodeURIComponent(key), {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ status: 'active', hostname: null, activated_at: null })
+    });
+    loadClients();
+  } catch(e) {
+    alert('Failed to reactivate: ' + e.message);
+  }
+}
+
+document.getElementById('refreshbtn').addEventListener('click', loadClients);
+
+// ── Password show/hide toggles ────────────────────────
+var EYE_OPEN = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+var EYE_OFF  = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+document.querySelectorAll('.pw-eye').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var input = document.getElementById(btn.dataset.target);
+    var svg = btn.querySelector('svg');
+    if (input.type === 'password') {
+      input.type = 'text';
+      svg.innerHTML = EYE_OFF;
+    } else {
+      input.type = 'password';
+      svg.innerHTML = EYE_OPEN;
+    }
+  });
+});
+
+// ── Settings: change password ─────────────────────────
+document.getElementById('settingsbtn').addEventListener('click', function(){
+  var panel = document.getElementById('settingspanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('st-savebtn').addEventListener('click', function(){
+  var pw1 = document.getElementById('st-newpw').value;
+  var pw2 = document.getElementById('st-newpw2').value;
+  var statusEl = document.getElementById('st-status');
+  if (!pw1 || pw1.length < 4) {
+    statusEl.textContent = 'Password must be at least 4 characters.';
+    statusEl.className = 'error';
+    return;
+  }
+  if (pw1 !== pw2) {
+    statusEl.textContent = 'Passwords do not match.';
+    statusEl.className = 'error';
+    return;
+  }
+  var newHash = djb2(pw1);
+  localStorage.setItem('dma_pw_hash', newHash);
+  document.getElementById('st-newpw').value = '';
+  document.getElementById('st-newpw2').value = '';
+  statusEl.textContent = 'Password updated. Use it next time you unlock.';
+  statusEl.className = '';
+});
+</script>
+</body>
+</html>
